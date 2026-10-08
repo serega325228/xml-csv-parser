@@ -2,40 +2,53 @@ from collections.abc import Callable
 from pathlib import Path
 
 from src.app.parsers.parser_provider import ParserProvider
-from src.app.services.analyzer import Analyzer
+from src.app.services.analyzer import AnalysisResult, Analyzer
 
 
-def menu(parsers: dict[str, Callable[[], ParserProvider]], analyzer: Analyzer):
-    while True:
-        print("0. Exit")
-        print("1. Parse XML or CSV file")
-        user_input = input("Enter your choice: ")
-        if user_input == "0":
-            break
-        elif user_input == "1":
-            path = Path(input("Enter the path to the XML/CSV file: "))
-            if not path.exists():
-                print("File not found")
-                continue
-            if path.suffix in parsers:
-                parser = parsers[path.suffix]()
-                results = analyzer.get_statistics(parser.parse(path))
-                show_results(results)
+class CLI:
+    def __init__(
+        self,
+        parsers: dict[str, Callable[[], ParserProvider]],
+        analyzer: Analyzer,
+    ) -> None:
+        self.parsers = parsers
+        self.analyzer = analyzer
+
+    def run(self) -> None:
+        while True:
+            print("0. Exit")
+            print("1. Parse XML or CSV file")
+            user_input = input("Enter your choice: ")
+            if user_input == "0":
+                break
+            if user_input == "1":
+                self._parse_file()
             else:
-                print("Invalid file type")
-                continue
-        else:
-            print("Invalid choice")
+                print("Invalid choice")
 
-def show_results(results: list[dict | list | float]):
-    print("\n\nDUPLICATE RECORDS\n")
-    # for k, v in results[0]:
-    #     print(f"{k}: {v}")
-    print(results[0])
+    def _parse_file(self) -> None:
+        path = Path(input("Enter the path to the XML/CSV file: "))
+        if not path.is_file():
+            print("File not found")
+            return
 
-    print("\n\nFLOORS PER CITY\n")
-    for city, floors in results[1].items():
-        print(f"{city}: {floors}")
+        parser_factory = self.parsers.get(path.suffix.lower())
+        if parser_factory is None:
+            print("Invalid file type")
+            return
 
-    print("\n\nTIME TAKEN\n")
-    print(f"{results[2]:.2f}\n\n")
+        parser = parser_factory()
+        result = self.analyzer.get_statistics(parser.parse(path))
+        self._show_results(result)
+
+    @staticmethod
+    def _show_results(result: AnalysisResult) -> None:
+        print("\n\nDUPLICATE RECORDS\n")
+        print(result.duplicates)
+
+        print("\n\nFLOORS PER CITY\n")
+        for city, floors in result.floors_by_city.items():
+            print(f"{city}: {floors}")
+
+        print("\n\nTIME TAKEN\n")
+        print(f"{result.elapsed_seconds:.2f}\n\n")

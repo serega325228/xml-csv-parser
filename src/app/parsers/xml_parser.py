@@ -5,7 +5,7 @@ from lxml import etree
 
 
 class XMLParser:
-    def parse(self, path: Path) -> Generator[dict]:
+    def parse(self, path: Path) -> Generator[dict[str, str]]:
         context = etree.iterparse(
             path,
             events=("end",),
@@ -13,10 +13,10 @@ class XMLParser:
         )
 
         for _, elem in context:
-            if elem.tag != "item":
-                continue
-            yield elem.attrib
+            record = dict(elem.attrib)
             elem.clear()
 
             while elem.getprevious() is not None:
                 del elem.getparent()[0]
+
+            yield record

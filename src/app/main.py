@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from src.app.cli.cli import menu
+from src.app.cli.cli import CLI
 from src.app.parsers.csv_parser import CSVParser
 from src.app.parsers.parser_provider import ParserProvider
 from src.app.parsers.xml_parser import XMLParser
@@ -14,8 +14,7 @@ def main():
         ".csv": CSVParser,
     }
 
-    analyzer = Analyzer()
-    menu(providers, analyzer)
+    CLI(providers, Analyzer()).run()
 
 
 if __name__ == "__main__":
